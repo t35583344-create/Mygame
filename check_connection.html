@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Проверка соединения с сервером</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f0f0f0;
+        }
+        .box {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        #status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        h2 {
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h2>🧪 Проверка соединения с игровым сервером</h2>
+        
+        <input type="text" id="serverAddress" placeholder="Адрес сервера (например, localhost:8081)" value="localhost:8081">
+        
+        <label>
+            <input type="checkbox" id="secureCheckbox" checked>
+            🔒 Использовать безопасное соединение (WSS)
+        </label>
+        
+        <button onclick="testConnection()">Проверить соединение</button>
+        
+        <div id="status"></div>
+        
+        <div style="margin-top: 20px; padding: 15px; background: #f9f9f9; border-radius: 4px;">
+            <h3>📋 Примеры адресов:</h3>
+            <ul>
+                <li><strong>Локально:</strong> localhost:8081</li>
+                <li><strong>Replit:</strong> username-block-builder.replit.dev:3000</li>
+                <li><strong>Railway:</strong> your-app.railway.app:3000</li>
+                <li><strong>Heroku:</strong> your-app.herokuapp.com</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        function testConnection() {
+            const serverAddress = document.getElementById('serverAddress').value.trim();
+            const useSecure = document.getElementById('secureCheckbox').checked;
+            const statusDiv = document.getElementById('status');
+
+            if (!serverAddress) {
+                statusDiv.className = 'error';
+                statusDiv.innerHTML = '❌ Пожалуйста, введите адрес сервера';
+                return;
+            }
+
+            statusDiv.className = 'info';
+            statusDiv.innerHTML = '⏳ Проверяю соединение...';
+
+            let protocol = 'ws';
+            if (!serverAddress.includes('localhost') && !serverAddress.includes('127.0.0.1')) {
+                protocol = useSecure ? 'wss' : 'ws';
+            }
+
+            const wsUrl = `${protocol}://${serverAddress}`;
+
+            const ws = new WebSocket(wsUrl);
+            const timeout = setTimeout(() => {
+                ws.close();
+                statusDiv.className = 'error';
+                statusDiv.innerHTML = `❌ <strong>Таймаут!</strong><br>
+                    Сервер не ответил в течение 5 секунд.<br>
+                    <strong>Проверьте:</strong><br>
+                    1. Адрес сервера правильный?<br>
+                    2. Сервер запущен и работает?<br>
+                    3. Правильно ли включено/отключено безопасное соединение?<br>
+                    <br><code style="background: #fff; padding: 5px;">${wsUrl}</code>`;
+            }, 5000);
+
+            ws.onopen = () => {
+                clearTimeout(timeout);
+                statusDiv.className = 'success';
+                statusDiv.innerHTML = `✅ <strong>Соединение успешно!</strong><br>
+                    Адрес: ${wsUrl}<br>
+                    <br>Теперь можете открыть index.html и играть!<br>
+                    Введите адрес: <code style="background: #fff; padding: 5px;">${serverAddress}</code>`;
+                ws.close();
+            };
+
+            ws.onerror = (error) => {
+                clearTimeout(timeout);
+                statusDiv.className = 'error';
+                statusDiv.innerHTML = `❌ <strong>Ошибка соединения!</strong><br>
+                    ${wsUrl}<br>
+                    <br>Причины:<br>
+                    • Неправильный адрес сервера<br>
+                    • Сервер не запущен<br>
+                    • Проблема с интернетом<br>
+                    • Неправильно выбрано безопасное соединение`;
+            };
+
+            ws.onclose = () => {
+                clearTimeout(timeout);
+                if (statusDiv.className === 'info') {
+                    statusDiv.className = 'error';
+                    statusDiv.innerHTML = `❌ Соединение закрыто нежданно`;
+                }
+            };
+        }
+
+        // Проверить при загрузке страницы
+        window.addEventListener('load', () => {
+            console.log('Загадка для проверки соединений готова');
+        });
+    </script>
+</body>
+</html>

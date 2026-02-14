@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Block Builder Game - Multiplayer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            background: #222;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: white;
+        }
+        .container {
+            display: flex;
+            gap: 20px;
+            padding: 20px;
+            flex-wrap: wrap;
+        }
+        .game-area {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        canvas {
+            border: 3px solid #666;
+            background: #87ceeb;
+            display: block;
+        }
+        .controls {
+            background: #333;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 12px;
+        }
+        .controls p {
+            margin: 5px 0;
+        }
+        .inventory {
+            background: #333;
+            padding: 10px;
+            border-radius: 5px;
+            min-width: 150px;
+        }
+        .inventory h3 {
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 5px;
+        }
+        .color-btn {
+            width: 100%;
+            height: 40px;
+            border: 2px solid #666;
+            cursor: pointer;
+            border-radius: 3px;
+            transition: transform 0.1s;
+        }
+        .color-btn:hover {
+            transform: scale(1.05);
+        }
+        .color-btn.active {
+            border: 3px solid white;
+            box-shadow: 0 0 10px rgba(255,255,255,0.5);
+        }
+        .status {
+            background: #333;
+            padding: 10px;
+            border-radius: 5px;
+            min-width: 150px;
+            font-size: 12px;
+        }
+        .status h3 {
+            margin-bottom: 10px;
+            color: #4a9eff;
+        }
+        .status p {
+            margin: 5px 0;
+        }
+        .status.connected p {
+            color: #00ff00;
+        }
+        .status.disconnected p {
+            color: #ff0000;
+        }
+        .players-list {
+            background: #333;
+            padding: 10px;
+            border-radius: 5px;
+            min-width: 150px;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .players-list h3 {
+            margin-bottom: 10px;
+            color: #4a9eff;
+        }
+        .player-item {
+            padding: 5px;
+            margin: 3px 0;
+            background: #444;
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .player-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 1px solid white;
+        }
+        .join-form {
+            background: #333;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+            min-width: 200px;
+        }
+        .join-form input {
+            width: 100%;
+            padding: 8px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 3px;
+        }
+        .join-form button {
+            width: 100%;
+            padding: 10px;
+            background: #4a9eff;
+            border: none;
+            border-radius: 3px;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .join-form button:hover {
+            background: #2575d7;
+        }
+        .join-form button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="joinMenu" class="join-form">
+            <h3>🌍 Block Builder - Multiplayer</h3>
+            <input type="text" id="playerName" placeholder="Your name / Ваше имя" maxlength="20">
+            <small style="color: #4a9eff; margin-top: 5px; display: block; margin-bottom: 10px;">
+                🔗 Server: mygame-production-9218.up.railway.app
+            </small>
+            <button onclick="connectToServer()" style="background: #00aa44; font-size: 16px; padding: 12px;">▶️ JOIN GAME</button>
+            <button onclick="toggleAdvanced()" style="background: #444; margin-top: 8px; font-size: 12px;">⚙️ Settings</button>
+            <div id="advancedSettings" style="display: none; margin-top: 10px; padding-top: 10px; border-top: 1px solid #555;">
+                <button onclick="changeServer()" style="background: #4CAF50; width: 100%; padding: 8px; margin-bottom: 8px;">🔄 Change Server</button>
+                <label style="display: block; margin-top: 10px; font-size: 11px;">
+                    <input type="checkbox" id="useSecure" checked> 🔒 Secure Connection (WSS)
+                </label>
+            </div>
+        </div>
+
+        <div id="gameContainer" style="display: none;">
+            <div class="game-area">
+                <canvas id="canvas"></canvas>
+                <div class="controls">
+                    <p><strong>Controls:</strong></p>
+                    <p>Arrow Keys - Move</p>
+                    <p>Left Click - Place Block</p>
+                    <p>Right Click - Delete Block</p>
+                    <p>Space - Jump</p>
+                </div>
+            </div>
+            <div class="inventory">
+                <h3>Block Colors</h3>
+                <div class="color-grid" id="colorGrid"></div>
+            </div>
+            <div class="status disconnected">
+                <h3>Connection</h3>
+                <p id="connectionStatus">Disconnected</p>
+                <p id="playerCount">Players: 0</p>
+            </div>
+            <div class="players-list">
+                <h3>Online Players</h3>
+                <div id="playersList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let ws = null;
+        let playerId = null;
+        let playerName = null;
+        let canvas = null;
+        let ctx = null;
+
+        // MAIN SERVER - изменяй здесь!
+        const MAIN_SERVER = 'mygame-production-9218.up.railway.app';
+        let currentServer = MAIN_SERVER;
+
+        const GRID_WIDTH = 30;
+        const GRID_HEIGHT = 20;
+        const BLOCK_SIZE = 20;
+
+        const playerColors = [
+            '#ff69b4', '#FFD700', '#00CED1', '#00FF00',
+            '#FF6347', '#FF4500', '#9370DB', '#20B2AA'
+        ];
+
+        let grid = Array(GRID_HEIGHT).fill(null).map(() => Array(GRID_WIDTH).fill(null));
+        let selectedColor = '#FF0000';
+        let player = { x: 15, y: 3, width: 15, height: 15 };
+        let velocityY = 0;
+        let isJumping = false;
+        let otherPlayers = {};
+
+        const keys = {};
+        let lastMousePos = { x: 0, y: 0 };
+        let lastSendTime = 0;
+
+        function toggleAdvanced() {
+            const advanced = document.getElementById('advancedSettings');
+            advanced.style.display = advanced.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function changeServer() {
+            const newServer = prompt('Enter server address:', currentServer);
+            if (newServer && newServer.trim()) {
+                currentServer = newServer.trim();
+                document.querySelector('.join-form small').innerHTML = `🔗 Server: ${currentServer}`;
+            }
+        }
+
+        function copyServerUrl() {
+            navigator.clipboard.writeText(`https://${currentServer}`).then(() => {
+                alert('Server URL copied! Share with your friend:\nhttps://' + currentServer);
+            }).catch(() => {
+                alert('Server URL: https://' + currentServer);
+            });
+        }
+
+        function connectToServer() {
+            playerName = document.getElementById('playerName').value.trim();
+
+            if (!playerName) {
+                alert('Please enter your name');
+                return;
+            }
+
+            // Determine protocol based on page and server
+            let protocol;
+            const isLocalhost = currentServer.includes('localhost') || currentServer.includes('127.0.0.1');
+            const useSecure = document.getElementById('useSecure')?.checked !== false;
+            
+            if (isLocalhost) {
+                // Localhost - use ws unless secure checkbox is checked
+                protocol = useSecure ? 'wss' : 'ws';
+            } else {
+                // Railway и другие удаленные серверы - ВСЕГДА используй WSS
+                protocol = 'wss';
+            }
+
+            const wsUrl = `${protocol}://${currentServer}`;
+
+            console.log('Connecting to:', wsUrl);
+            console.log('Server:', currentServer, '| Protocol:', protocol);
+
+            try {
+                ws = new WebSocket(wsUrl);
+
+                ws.onopen = () => {
+                    console.log('✅ Connected to server');
+                    ws.send(JSON.stringify({
+                        type: 'join',
+                        name: playerName
+                    }));
+                    initGame();
+                };
+
+                ws.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    handleServerMessage(data);
+                };
+
+                ws.onerror = (error) => {
+                    console.error('❌ WebSocket error:', error);
+                    updateStatus('Connection Error', false);
+                    alert(`❌ Connection failed!\n\nServer: ${currentServer}\nProtocol: ${protocol}\n\nCheck:\n1. Server is running\n2. Server address is correct\n3. Your network connection`);
+                };
+
+                ws.onclose = () => {
+                    console.log('❌ Disconnected from server');
+                    updateStatus('Disconnected', false);
+                };
+            } catch (e) {
+                alert('Failed to connect: ' + e.message);
+            }
+        }
+
+        function initGame() {
+            document.getElementById('joinMenu').style.display = 'none';
+            document.getElementById('gameContainer').style.display = 'flex';
+
+            canvas = document.getElementById('canvas');
+            ctx = canvas.getContext('2d');
+            canvas.width = 600;
+            canvas.height = 400;
+
+            updateStatus('Connected', true);
+
+            // Setup inventory
+            const colorGrid = document.getElementById('colorGrid');
+            colorGrid.innerHTML = '';
+            const colors = ['#FF0000', '#FF7F00', '#FFFF00', '#00FF00', '#0000FF', '#4B0082', '#9400D3'];
+            colors.forEach(color => {
+                const btn = document.createElement('button');
+                btn.className = 'color-btn';
+                btn.style.backgroundColor = color;
+                if (color === selectedColor) btn.classList.add('active');
+                btn.addEventListener('click', () => selectColor(color, btn));
+                colorGrid.appendChild(btn);
+            });
+
+            // Input handling
+            window.addEventListener('keydown', (e) => keys[e.key] = true);
+            window.addEventListener('keyup', (e) => keys[e.key] = false);
+
+            canvas.addEventListener('mousemove', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                lastMousePos.x = e.clientX - rect.left;
+                lastMousePos.y = e.clientY - rect.top;
+            });
+
+            canvas.addEventListener('click', placeBlock);
+            canvas.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                deleteBlock();
+            });
+
+            gameLoop();
+        }
+
+        function selectColor(color, btn) {
+            selectedColor = color;
+            document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+
+        function handleServerMessage(data) {
+            switch(data.type) {
+                case 'playerJoined':
+                    otherPlayers[data.playerId] = {
+                        id: data.playerId,
+                        name: data.name,
+                        x: data.x,
+                        y: data.y,
+                        color: data.color
+                    };
+                    updatePlayersList();
+                    break;
+                case 'playerLeft':
+                    delete otherPlayers[data.playerId];
+                    updatePlayersList();
+                    break;
+                case 'yourId':
+                    playerId = data.id;
+                    break;
+                case 'gridUpdate':
+                    grid = data.grid;
+                    break;
+                case 'playerMove':
+                    if (otherPlayers[data.playerId]) {
+                        otherPlayers[data.playerId].x = data.x;
+                        otherPlayers[data.playerId].y = data.y;
+                    }
+                    break;
+                case 'playersList':
+                    otherPlayers = {};
+                    data.players.forEach(p => {
+                        if (p.id !== playerId) {
+                            otherPlayers[p.id] = p;
+                        }
+                    });
+                    updatePlayersList();
+                    break;
+                case 'blockPlaced':
+                    grid[data.y][data.x] = data.color;
+                    break;
+                case 'blockDeleted':
+                    grid[data.y][data.x] = null;
+                    break;
+            }
+        }
+
+        function updatePlayersList() {
+            const listDiv = document.getElementById('playersList');
+            listDiv.innerHTML = '';
+            Object.values(otherPlayers).forEach(p => {
+                const item = document.createElement('div');
+                item.className = 'player-item';
+                item.innerHTML = `<div class="player-color" style="background: ${p.color}"></div><span>${p.name}</span>`;
+                listDiv.appendChild(item);
+            });
+            document.getElementById('playerCount').textContent = `Players: ${Object.keys(otherPlayers).length + 1}`;
+        }
+
+        function updateStatus(status, connected) {
+            document.getElementById('connectionStatus').textContent = status;
+            const statusEl = document.querySelector('.status');
+            if (connected) {
+                statusEl.classList.remove('disconnected');
+                statusEl.classList.add('connected');
+            } else {
+                statusEl.classList.add('disconnected');
+                statusEl.classList.remove('connected');
+            }
+        }
+
+        function getGridPosFromMouse() {
+            const gridX = Math.floor(lastMousePos.x / BLOCK_SIZE);
+            const gridY = Math.floor(lastMousePos.y / BLOCK_SIZE);
+            return { x: gridX, y: gridY };
+        }
+
+        function placeBlock() {
+            const pos = getGridPosFromMouse();
+            if (pos.x >= 0 && pos.x < GRID_WIDTH && pos.y >= 0 && pos.y < GRID_HEIGHT) {
+                if (ws) {
+                    ws.send(JSON.stringify({
+                        type: 'placeBlock',
+                        x: pos.x,
+                        y: pos.y,
+                        color: selectedColor
+                    }));
+                }
+            }
+        }
+
+        function deleteBlock() {
+            const pos = getGridPosFromMouse();
+            if (pos.x >= 0 && pos.x < GRID_WIDTH && pos.y >= 0 && pos.y < GRID_HEIGHT) {
+                if (ws) {
+                    ws.send(JSON.stringify({
+                        type: 'deleteBlock',
+                        x: pos.x,
+                        y: pos.y
+                    }));
+                }
+            }
+        }
+
+        function checkBlockCollision(x, y, width, height) {
+            const gridX1 = Math.floor(x / BLOCK_SIZE);
+            const gridX2 = Math.floor((x + width - 1) / BLOCK_SIZE);
+            const gridY1 = Math.floor(y / BLOCK_SIZE);
+            const gridY2 = Math.floor((y + height - 1) / BLOCK_SIZE);
+
+            for (let gy = gridY1; gy <= gridY2; gy++) {
+                for (let gx = gridX1; gx <= gridX2; gx++) {
+                    if (gy >= 0 && gy < GRID_HEIGHT && gx >= 0 && gx < GRID_WIDTH) {
+                        if (grid[gy][gx]) {
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        function update() {
+            // Не обновляй, если canvas не инициализирован
+            if (!canvas) return;
+
+            let newX = player.x;
+            if (keys['ArrowLeft']) newX -= 2;
+            if (keys['ArrowRight']) newX += 2;
+
+            if (!checkBlockCollision(newX, player.y, player.width, player.height)) {
+                player.x = newX;
+            }
+
+            if (player.x < 0) player.x = 0;
+            if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
+
+            if ((keys[' '] || keys['ArrowUp']) && !isJumping) {
+                velocityY = -8;
+                isJumping = true;
+            }
+            velocityY += 0.3;
+            let newY = player.y + velocityY;
+
+            if (!checkBlockCollision(player.x, newY, player.width, player.height) && newY + player.height <= canvas.height) {
+                player.y = newY;
+            } else {
+                if (velocityY > 0) {
+                    velocityY = 0;
+                    isJumping = false;
+                }
+            }
+
+            if (player.y + player.height >= canvas.height) {
+                player.y = canvas.height - player.height;
+                velocityY = 0;
+                isJumping = false;
+            }
+
+            // Send player position to server
+            const now = Date.now();
+            if (ws && now - lastSendTime > 100) {
+                ws.send(JSON.stringify({
+                    type: 'movePlayer',
+                    x: player.x,
+                    y: player.y
+                }));
+                lastSendTime = now;
+            }
+        }
+
+        function draw() {
+            // Не рисуй, если canvas не инициализирован
+            if (!canvas || !ctx) return;
+
+            ctx.fillStyle = '#87ceeb';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw grid
+            ctx.strokeStyle = '#ccc';
+            ctx.lineWidth = 0.5;
+            for (let i = 0; i <= GRID_WIDTH; i++) {
+                ctx.beginPath();
+                ctx.moveTo(i * BLOCK_SIZE, 0);
+                ctx.lineTo(i * BLOCK_SIZE, canvas.height);
+                ctx.stroke();
+            }
+            for (let i = 0; i <= GRID_HEIGHT; i++) {
+                ctx.beginPath();
+                ctx.moveTo(0, i * BLOCK_SIZE);
+                ctx.lineTo(canvas.width, i * BLOCK_SIZE);
+                ctx.stroke();
+            }
+
+            // Draw blocks
+            for (let y = 0; y < GRID_HEIGHT; y++) {
+                for (let x = 0; x < GRID_WIDTH; x++) {
+                    if (grid[y][x]) {
+                        ctx.fillStyle = grid[y][x];
+                        ctx.fillRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+                        ctx.strokeStyle = '#000';
+                        ctx.lineWidth = 1;
+                        ctx.strokeRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+                    }
+                }
+            }
+
+            // Draw other players
+            Object.values(otherPlayers).forEach(otherPlayer => {
+                ctx.fillStyle = otherPlayer.color;
+                ctx.fillRect(otherPlayer.x, otherPlayer.y, 15, 15);
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(otherPlayer.x, otherPlayer.y, 15, 15);
+
+                // Draw player name
+                ctx.fillStyle = '#000';
+                ctx.font = '10px Arial';
+                ctx.fillText(otherPlayer.name, otherPlayer.x, otherPlayer.y - 5);
+            });
+
+            // Draw player
+            ctx.fillStyle = '#ff69b4';
+            ctx.fillRect(player.x, player.y, player.width, player.height);
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(player.x, player.y, player.width, player.height);
+            ctx.fillStyle = '#000';
+            ctx.font = '10px Arial';
+            ctx.fillText('You', player.x, player.y - 5);
+        }
+
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+    </script>
+</body>
+</html>
+
+<!-- Main Menu -->
+<div id="mainMenu" class="menu">
+    <div class="menu-content">
+        <h1>Block Builder Game</h1>
+        <button id="startBtn" class="menu-btn">Start Game</button>
+        <button id="instructionsBtn" class="menu-btn">Instructions</button>
+    </div>
+</div>
+
+<!-- Pause Menu -->
+<div id="pauseMenu" class="menu hidden">
+    <div class="menu-content">
+        <h2>Paused</h2>
+        <button id="resumeBtn" class="menu-btn">Resume</button>
+        <button id="menuBtn" class="menu-btn">Main Menu</button>
+    </div>
+</div>
+
+<style>
+.menu {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.menu.hidden {
+    display: none;
+}
+
+.menu-content {
+    background: #333;
+    padding: 40px;
+    border-radius: 10px;
+    text-align: center;
+    border: 3px solid #666;
+}
+
+.menu-content h1 {
+    font-size: 48px;
+    margin-bottom: 30px;
+    color: #fff;
+}
+
+.menu-content h2 {
+    font-size: 36px;
+    margin-bottom: 20px;
+    color: #fff;
+}
+
+.menu-btn {
+    display: block;
+    width: 200px;
+    padding: 15px;
+    margin: 10px auto;
+    font-size: 18px;
+    background: #0066cc;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.menu-btn:hover {
+    background: #0052a3;
+}
+</style>
+
+<script>
+let gamePaused = true;
+
+document.getElementById('startBtn').addEventListener('click', () => {
+    document.getElementById('mainMenu').classList.add('hidden');
+    gamePaused = false;
+});
+
+document.getElementById('resumeBtn').addEventListener('click', () => {
+    document.getElementById('pauseMenu').classList.add('hidden');
+    gamePaused = false;
+});
+
+document.getElementById('menuBtn').addEventListener('click', () => {
+    document.getElementById('pauseMenu').classList.add('hidden');
+    document.getElementById('mainMenu').classList.remove('hidden');
+    gamePaused = true;
+    grid = Array(GRID_HEIGHT).fill(null).map(() => Array(GRID_WIDTH).fill(null));
+});
+
+window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !gamePaused) {
+        gamePaused = true;
+        document.getElementById('pauseMenu').classList.remove('hidden');
+    }
+});
+
+const originalGameLoop = gameLoop;
+gameLoop = function() {
+    if (!gamePaused) {
+        update();
+        draw();
+    }
+    requestAnimationFrame(gameLoop);
+};
+
+gameLoop();
+</script>
