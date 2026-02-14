@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Block Builder - Mobile</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #222;
+            font-family: Arial, sans-serif;
+            color: white;
+        }
+        
+        .mobile-container {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
+            gap: 0;
+        }
+        
+        #joinScreen {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+            padding: 20px;
+        }
+        
+        .join-form {
+            background: #333;
+            padding: 30px 20px;
+            border-radius: 10px;
+            text-align: center;
+            width: 100%;
+            max-width: 320px;
+        }
+        
+        .join-form h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #fff;
+        }
+        
+        .join-form input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        
+        .join-form button {
+            width: 100%;
+            padding: 14px;
+            margin: 8px 0;
+            background: #00aa44;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            active: pressed;
+        }
+        
+        .join-form button:active {
+            background: #008833;
+            transform: scale(0.98);
+        }
+        
+        .server-info {
+            font-size: 11px;
+            color: #4a9eff;
+            margin-top: 10px;
+        }
+        
+        #gameScreen {
+            display: none;
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
+            gap: 10px;
+            padding: 10px;
+        }
+        
+        #gameScreen.active {
+            display: flex;
+        }
+        
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #333;
+            padding: 8px 10px;
+            border-radius: 5px;
+            font-size: 13px;
+        }
+        
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 5px;
+            display: inline-block;
+        }
+        
+        .status-indicator.connected {
+            background: #00ff00;
+            box-shadow: 0 0 5px #00ff00;
+        }
+        
+        .status-indicator.disconnected {
+            background: #ff0000;
+        }
+        
+        canvas {
+            width: 100%;
+            flex: 1;
+            background: #87ceeb;
+            border: 2px solid #666;
+            border-radius: 5px;
+            min-height: 200px;
+        }
+        
+        .color-selector {
+            display: flex;
+            gap: 5px;
+            overflow-x: auto;
+            background: #333;
+            padding: 8px;
+            border-radius: 5px;
+        }
+        
+        .color-btn {
+            width: 35px;
+            height: 35px;
+            border: 2px solid #666;
+            border-radius: 3px;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        
+        .color-btn.active {
+            border: 3px solid white;
+            box-shadow: 0 0 8px rgba(255,255,255,0.5);
+        }
+        
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+        
+        .d-pad {
+            display: grid;
+            grid-template-columns: repeat(3, 50px);
+            grid-template-rows: repeat(3, 50px);
+            gap: 3px;
+            justify-self: center;
+        }
+        
+        .d-pad-btn {
+            background: #4a9eff;
+            border: 2px solid #2575d7;
+            border-radius: 5px;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .d-pad-btn:active {
+            background: #2575d7;
+            transform: scale(0.95);
+        }
+        
+        .d-pad-spacer {
+            background: transparent;
+        }
+        
+        .action-btn {
+            padding: 12px;
+            background: #4a9eff;
+            border: 2px solid #2575d7;
+            border-radius: 5px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        
+        .action-btn:active {
+            background: #2575d7;
+            transform: scale(0.95);
+        }
+        
+        .action-btn.jump {
+            background: #00aa44;
+            border-color: #008833;
+        }
+        
+        .action-btn.jump:active {
+            background: #008833;
+        }
+        
+        .action-btn.place {
+            background: #ffaa00;
+            border-color: #ff8800;
+        }
+        
+        .action-btn.place:active {
+            background: #ff8800;
+        }
+        
+        .action-btn.delete {
+            background: #ff4444;
+            border-color: #cc0000;
+        }
+        
+        .action-btn.delete:active {
+            background: #cc0000;
+        }
+        
+        .players-info {
+            background: #333;
+            padding: 8px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            max-height: 60px;
+            overflow-y: auto;
+        }
+        
+        .players-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .player-tag {
+            background: #444;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            white-space: nowrap;
+        }
+        
+        .player-color-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            border: 1px solid white;
+        }
+    </style>
+</head>
+<body>
+    <div class="mobile-container">
+        <!-- Экран присоединения -->
+        <div id="joinScreen">
+            <div class="join-form">
+                <h1>🌍 Block Builder</h1>
+                <input type="text" id="playerName" placeholder="Your name" maxlength="15">
+                <button onclick="connectToGame()">▶️ JOIN GAME</button>
+                <div class="server-info">
+                    🔗 mygame-production-9218.up.railway.app
+                </div>
+            </div>
+        </div>
+        
+        <!-- Экран игры -->
+        <div id="gameScreen">
+            <div class="game-header">
+                <div>
+                    <span class="status-indicator connected" id="statusDot"></span>
+                    <span id="connectionText">Connected</span>
+                </div>
+                <div id="playerCount">Players: 0</div>
+            </div>
+            
+            <canvas id="gameCanvas"></canvas>
+            
+            <div class="color-selector" id="colorSelector"></div>
+            
+            <div class="controls">
+                <div class="d-pad">
+                    <div class="d-pad-spacer"></div>
+                    <button class="d-pad-btn" ontouchstart="handleMove('up', true)" ontouchend="handleMove('up', false)">⬆️</button>
+                    <div class="d-pad-spacer"></div>
+                    
+                    <button class="d-pad-btn" ontouchstart="handleMove('left', true)" ontouchend="handleMove('left', false)">⬅️</button>
+                    <div class="d-pad-spacer"></div>
+                    <button class="d-pad-btn" ontouchstart="handleMove('right', true)" ontouchend="handleMove('right', false)">➡️</button>
+                    
+                    <div class="d-pad-spacer"></div>
+                    <button class="d-pad-btn" ontouchstart="handleMove('down', true)" ontouchend="handleMove('down', false)">⬇️</button>
+                    <div class="d-pad-spacer"></div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+                    <button class="action-btn jump" ontouchstart="handleJump(true)" ontouchend="handleJump(false)">JUMP</button>
+                    <button class="action-btn place" ontouchstart="placeBlock()">PLACE</button>
+                </div>
+                
+                <button class="action-btn delete" style="width: 100%;" ontouchstart="deleteBlock()">DELETE</button>
+            </div>
+            
+            <div class="players-info">
+                <div class="players-list" id="playersList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let ws = null;
+        let playerId = null;
+        let playerName = null;
+        let canvas = null;
+        let ctx = null;
+        
+        const MAIN_SERVER = 'mygame-production-9218.up.railway.app';
+        const GRID_WIDTH = 30;
+        const GRID_HEIGHT = 20;
+        const BLOCK_SIZE = 20;
+        const PLAYER_SPEED = 120;
+        const FIXED_DELTA_TIME = 1 / 60;
+        
+        const playerColors = ['#ff69b4', '#FFD700', '#00CED1', '#00FF00', '#FF6347', '#FF4500', '#9370DB', '#20B2AA'];
+        const blockColors = ['#FF0000', '#FF7F00', '#FFFF00', '#00FF00', '#0000FF', '#4B0082', '#9400D3'];
+        
+        let grid = Array(GRID_HEIGHT).fill(null).map(() => Array(GRID_WIDTH).fill(null));
+        let selectedColor = '#FF0000';
+        let player = { x: 15, y: 3, width: 15, height: 15 };
+        let velocityY = 0;
+        let isJumping = false;
+        let otherPlayers = {};
+        
+        const mobileKeys = { left: false, right: false, up: false, down: false };
+        let lastSendTime = 0;
+        
+        function connectToGame() {
+            playerName = document.getElementById('playerName').value.trim();
+            if (!playerName) {
+                alert('Enter your name!');
+                return;
+            }
+            
+            const wsUrl = `wss://${MAIN_SERVER}`;
+            
+            try {
+                ws = new WebSocket(wsUrl);
+                
+                ws.onopen = () => {
+                    console.log('✅ Connected');
+                    ws.send(JSON.stringify({ type: 'join', name: playerName }));
+                    initGame();
+                };
+                
+                ws.onmessage = (event) => {
+                    handleServerMessage(JSON.parse(event.data));
+                };
+                
+                ws.onerror = () => {
+                    updateStatus('Connection Error', false);
+                    alert('❌ Cannot connect to server');
+                };
+                
+                ws.onclose = () => {
+                    updateStatus('Disconnected', false);
+                };
+            } catch (e) {
+                alert('Failed: ' + e.message);
+            }
+        }
+        
+        function initGame() {
+            document.getElementById('joinScreen').style.display = 'none';
+            document.getElementById('gameScreen').classList.add('active');
+            
+            canvas = document.getElementById('gameCanvas');
+            ctx = canvas.getContext('2d');
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            
+            updateStatus('Connected', true);
+            setupColorSelector();
+            gameLoop();
+        }
+        
+        function setupColorSelector() {
+            const selector = document.getElementById('colorSelector');
+            selector.innerHTML = '';
+            blockColors.forEach(color => {
+                const btn = document.createElement('button');
+                btn.className = 'color-btn' + (color === selectedColor ? ' active' : '');
+                btn.style.backgroundColor = color;
+                btn.ontouchstart = () => selectColor(color, btn);
+                selector.appendChild(btn);
+            });
+        }
+        
+        function selectColor(color, btn) {
+            selectedColor = color;
+            document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+        
+        function handleServerMessage(data) {
+            switch (data.type) {
+                case 'playerJoined':
+                    otherPlayers[data.playerId] = {
+                        id: data.playerId, name: data.name, x: data.x, y: data.y,
+                        targetX: data.x, targetY: data.y, color: data.color
+                    };
+                    updatePlayersList();
+                    break;
+                case 'playerLeft':
+                    delete otherPlayers[data.playerId];
+                    updatePlayersList();
+                    break;
+                case 'yourId':
+                    playerId = data.id;
+                    break;
+                case 'gridUpdate':
+                    grid = data.grid;
+                    break;
+                case 'playerMove':
+                    if (otherPlayers[data.playerId]) {
+                        otherPlayers[data.playerId].targetX = data.x;
+                        otherPlayers[data.playerId].targetY = data.y;
+                    }
+                    break;
+                case 'playersList':
+                    otherPlayers = {};
+                    data.players.forEach(p => {
+                        if (p.id !== playerId) {
+                            otherPlayers[p.id] = { ...p, targetX: p.x, targetY: p.y };
+                        }
+                    });
+                    updatePlayersList();
+                    break;
+                case 'playersUpdate':
+                    data.players.forEach(p => {
+                        if (p.id !== playerId && otherPlayers[p.id]) {
+                            otherPlayers[p.id].targetX = p.x;
+                            otherPlayers[p.id].targetY = p.y;
+                        }
+                    });
+                    break;
+                case 'blockPlaced':
+                    grid[data.y][data.x] = data.color;
+                    break;
+                case 'blockDeleted':
+                    grid[data.y][data.x] = null;
+                    break;
+            }
+        }
+        
+        function updatePlayersList() {
+            const list = document.getElementById('playersList');
+            list.innerHTML = '';
+            Object.values(otherPlayers).forEach(p => {
+                const tag = document.createElement('div');
+                tag.className = 'player-tag';
+                tag.innerHTML = `<div class="player-color-dot" style="background: ${p.color}"></div>${p.name}`;
+                list.appendChild(tag);
+            });
+            document.getElementById('playerCount').textContent = `Players: ${Object.keys(otherPlayers).length + 1}`;
+        }
+        
+        function updateStatus(status, connected) {
+            document.getElementById('connectionText').textContent = status;
+            const dot = document.getElementById('statusDot');
+            dot.className = 'status-indicator ' + (connected ? 'connected' : 'disconnected');
+        }
+        
+        function handleMove(dir, pressed) {
+            mobileKeys[dir] = pressed;
+        }
+        
+        function handleJump(pressed) {
+            mobileKeys.up = pressed;
+        }
+        
+        function placeBlock() {
+            const pos = { x: Math.floor(canvas.width / 2 / BLOCK_SIZE), y: Math.floor(canvas.height / 2 / BLOCK_SIZE) };
+            if (pos.x >= 0 && pos.x < GRID_WIDTH && pos.y >= 0 && pos.y < GRID_HEIGHT && ws) {
+                ws.send(JSON.stringify({ type: 'placeBlock', x: pos.x, y: pos.y, color: selectedColor }));
+            }
+        }
+        
+        function deleteBlock() {
+            const pos = { x: Math.floor(canvas.width / 2 / BLOCK_SIZE), y: Math.floor(canvas.height / 2 / BLOCK_SIZE) };
+            if (pos.x >= 0 && pos.x < GRID_WIDTH && pos.y >= 0 && pos.y < GRID_HEIGHT && ws) {
+                ws.send(JSON.stringify({ type: 'deleteBlock', x: pos.x, y: pos.y }));
+            }
+        }
+        
+        function checkBlockCollision(x, y, width, height) {
+            const gridX1 = Math.floor(x / BLOCK_SIZE);
+            const gridX2 = Math.floor((x + width - 1) / BLOCK_SIZE);
+            const gridY1 = Math.floor(y / BLOCK_SIZE);
+            const gridY2 = Math.floor((y + height - 1) / BLOCK_SIZE);
+            
+            for (let gy = gridY1; gy <= gridY2; gy++) {
+                for (let gx = gridX1; gx <= gridX2; gx++) {
+                    if (gy >= 0 && gy < GRID_HEIGHT && gx >= 0 && gx < GRID_WIDTH && grid[gy][gx]) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+        
+        function update() {
+            if (!canvas) return;
+            
+            const moveAmount = PLAYER_SPEED * FIXED_DELTA_TIME;
+            let newX = player.x;
+            if (mobileKeys.left) newX -= moveAmount;
+            if (mobileKeys.right) newX += moveAmount;
+            
+            if (!checkBlockCollision(newX, player.y, player.width, player.height)) {
+                player.x = newX;
+            }
+            
+            if (player.x < 0) player.x = 0;
+            if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
+            
+            if (mobileKeys.up && !isJumping) {
+                velocityY = -8;
+                isJumping = true;
+            }
+            velocityY += 0.3;
+            let newY = player.y + velocityY;
+            
+            if (!checkBlockCollision(player.x, newY, player.width, player.height) && newY + player.height <= canvas.height) {
+                player.y = newY;
+            } else if (velocityY > 0) {
+                velocityY = 0;
+                isJumping = false;
+            }
+            
+            if (player.y + player.height >= canvas.height) {
+                player.y = canvas.height - player.height;
+                velocityY = 0;
+                isJumping = false;
+            }
+            
+            Object.values(otherPlayers).forEach(op => {
+                if (op.targetX !== undefined && op.targetY !== undefined) {
+                    const distX = op.targetX - op.x;
+                    const distY = op.targetY - op.y;
+                    const distance = Math.sqrt(distX * distX + distY * distY);
+                    
+                    if (distance > 0.1) {
+                        const interpolationFactor = Math.min(1, 0.12 * (60 / 1000));
+                        op.x += distX * interpolationFactor;
+                        op.y += distY * interpolationFactor;
+                    } else {
+                        op.x = op.targetX;
+                        op.y = op.targetY;
+                    }
+                }
+            });
+            
+            const now = Date.now();
+            if (ws && now - lastSendTime > 150) {
+                ws.send(JSON.stringify({ type: 'movePlayer', x: player.x, y: player.y }));
+                lastSendTime = now;
+            }
+        }
+        
+        function draw() {
+            if (!canvas || !ctx) return;
+            
+            ctx.fillStyle = '#87ceeb';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.strokeStyle = '#ccc';
+            ctx.lineWidth = 0.5;
+            for (let i = 0; i <= GRID_WIDTH; i++) {
+                ctx.beginPath();
+                ctx.moveTo(i * BLOCK_SIZE, 0);
+                ctx.lineTo(i * BLOCK_SIZE, canvas.height);
+                ctx.stroke();
+            }
+            for (let i = 0; i <= GRID_HEIGHT; i++) {
+                ctx.beginPath();
+                ctx.moveTo(0, i * BLOCK_SIZE);
+                ctx.lineTo(canvas.width, i * BLOCK_SIZE);
+                ctx.stroke();
+            }
+            
+            for (let y = 0; y < GRID_HEIGHT; y++) {
+                for (let x = 0; x < GRID_WIDTH; x++) {
+                    if (grid[y][x]) {
+                        ctx.fillStyle = grid[y][x];
+                        ctx.fillRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+                        ctx.strokeStyle = '#000';
+                        ctx.lineWidth = 1;
+                        ctx.strokeRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+                    }
+                }
+            }
+            
+            Object.values(otherPlayers).forEach(op => {
+                ctx.fillStyle = op.color;
+                ctx.fillRect(op.x, op.y, 15, 15);
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(op.x, op.y, 15, 15);
+                ctx.fillStyle = '#000';
+                ctx.font = '10px Arial';
+                ctx.fillText(op.name, op.x, op.y - 5);
+            });
+            
+            ctx.fillStyle = '#ff69b4';
+            ctx.fillRect(player.x, player.y, player.width, player.height);
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(player.x, player.y, player.width, player.height);
+            ctx.fillStyle = '#000';
+            ctx.font = '10px Arial';
+            ctx.fillText('YOU', player.x, player.y - 5);
+        }
+        
+        const FPS = 60;
+        const frameTime = 1000 / FPS;
+        let lastFrameTime = 0;
+        
+        function gameLoop(currentTime) {
+            const deltaTime = currentTime - lastFrameTime;
+            
+            if (deltaTime >= frameTime) {
+                update();
+                draw();
+                lastFrameTime = currentTime - (deltaTime % frameTime);
+            }
+            
+            requestAnimationFrame(gameLoop);
+        }
+        
+        requestAnimationFrame(gameLoop);
+        
+        console.log('📱 Mobile version loaded');
+    </script>
+</body>
+</html>

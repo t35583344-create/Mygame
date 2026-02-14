@@ -31,7 +31,7 @@ let players = {};
 let grid = Array(20).fill(null).map(() => Array(30).fill(null));
 let nextPlayerId = 1;
 let lastBroadcastTime = 0;
-const BROADCAST_INTERVAL = 50; // Отправляй обновления 20 раз в секунду (50ms)
+const BROADCAST_INTERVAL = 33; // ~30 обновлений в секунду (33ms) вместо 20
 
 const playerColors = [
     '#ff69b4', '#FFD700', '#00CED1', '#00FF00',
@@ -201,7 +201,8 @@ server.listen(PORT, '0.0.0.0', () => {
     console.log('================================');
     console.log(`✅ Server running on port ${PORT}`);
     console.log(`🎬 Client FPS: 60 (MAX)`);
-    console.log(`📡 Update broadcast: ${1000/BROADCAST_INTERVAL} times/sec (${BROADCAST_INTERVAL}ms)`);
+    console.log(`📡 Update broadcast: ~${Math.round(1000/BROADCAST_INTERVAL)} times/sec (${BROADCAST_INTERVAL}ms)`);
+    console.log(`✨ Client-side interpolation: Enabled (smooth movement)`);
     console.log(`\nDomain: ${process.env.RAILWAY_PUBLIC_DOMAIN || 'your-domain.railway.app'}`);
     console.log(`Connection string: ${process.env.RAILWAY_PUBLIC_DOMAIN || 'localhost'}${PORT === 80 || PORT === 443 ? '' : ':' + PORT}`);
     console.log(`\n🌐 WebSocket: wss://${process.env.RAILWAY_PUBLIC_DOMAIN || 'localhost' + ':' + PORT}`);
