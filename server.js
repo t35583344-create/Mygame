@@ -79,7 +79,7 @@ wss.on('connection', (ws) => {
                             .map(p => ({ id: p.id, name: p.name, x: p.x, y: p.y, color: p.color }))
                     }));
 
-                    // Notify all players about new player
+                    // Notify all OTHER players about new player (не отправляй самому себе)
                     broadcast({
                         type: 'playerJoined',
                         playerId: playerId,
@@ -87,7 +87,7 @@ wss.on('connection', (ws) => {
                         x: players[playerId].x,
                         y: players[playerId].y,
                         color: playerColor
-                    }, null);
+                    }, playerId);
 
                     console.log(`Player ${playerName} (${playerId}) joined. Total: ${Object.keys(players).length}`);
                     break;
@@ -159,10 +159,14 @@ wss.on('connection', (ws) => {
 function broadcast(message, excludePlayerId) {
     try {
         const data = JSON.stringify(message);
-        wss.clients.forEach((client) => {
-            if (client.readyState === WebSocket.OPEN) {
+        Object.values(players).forEach((player) => {
+            // Пропускаем исключённого игрока
+            if (excludePlayerId && player.id === excludePlayerId) {
+                return;
+            }
+            if (player.ws && player.ws.readyState === WebSocket.OPEN) {
                 try {
-                    client.send(data);
+                    player.ws.send(data);
                 } catch (e) {
                     console.error('Error sending message:', e.message);
                 }
