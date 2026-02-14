@@ -2,13 +2,23 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Block Builder Game - Multiplayer</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+        }
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
         }
         body {
             font-family: Arial, sans-serif;
@@ -24,16 +34,51 @@
             gap: 20px;
             padding: 20px;
             flex-wrap: wrap;
+            width: 100%;
+            height: 100%;
+            max-width: 2000px;
+            margin: 0 auto;
         }
         .game-area {
             display: flex;
             flex-direction: column;
             gap: 10px;
+            flex: 1;
+            min-width: 300px;
         }
         canvas {
             border: 3px solid #666;
             background: #87ceeb;
             display: block;
+            width: 100%;
+            height: auto;
+            max-width: 600px;
+            max-height: 400px;
+        }
+        
+        /* Мобильные стили */
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+                padding: 10px;
+                gap: 10px;
+            }
+            canvas {
+                max-width: 100%;
+                max-height: 50vh;
+            }
+            .controls, .inventory, .status, .players-list {
+                display: none !important;
+            }
+            .mobile-controls {
+                display: flex !important;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            canvas {
+                max-height: 40vh;
+            }
         }
         .controls {
             background: #333;
@@ -66,10 +111,13 @@
             cursor: pointer;
             border-radius: 3px;
             transition: transform 0.1s;
+            flex-shrink: 0;
         }
+        
         .color-btn:hover {
             transform: scale(1.05);
         }
+        
         .color-btn.active {
             border: 3px solid white;
             box-shadow: 0 0 10px rgba(255,255,255,0.5);
@@ -129,6 +177,15 @@
             text-align: center;
             min-width: 200px;
         }
+        
+        @media (max-width: 768px) {
+            .join-form {
+                min-width: auto;
+                width: 90%;
+                max-width: 400px;
+                padding: 20px;
+            }
+        }
         .join-form input {
             width: 100%;
             padding: 8px;
@@ -152,6 +209,131 @@
         .join-form button:disabled {
             background: #666;
             cursor: not-allowed;
+        }
+        
+        /* Мобильные кнопки управления */
+        .mobile-controls {
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+            width: 100%;
+            padding-bottom: 20px;
+        }
+        
+        .mobile-d-pad {
+            display: grid;
+            grid-template-columns: repeat(3, 60px);
+            gap: 5px;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+        
+        .d-pad-btn {
+            width: 60px;
+            height: 60px;
+            background: #4a9eff;
+            border: 2px solid #2575d7;
+            border-radius: 5px;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            active-state: pressed;
+            transition: background 0.1s;
+        }
+        
+        .d-pad-btn:active {
+            background: #2575d7;
+            transform: scale(0.95);
+        }
+        
+        .d-pad-btn:active {
+            outline: none;
+        }
+        
+        .d-pad-btn:disabled {
+            background: #666;
+            opacity: 0.5;
+        }
+        
+        .mobile-action-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            width: 100%;
+        }
+        
+        .action-btn {
+            padding: 15px;
+            background: #4a9eff;
+            border: 2px solid #2575d7;
+            border-radius: 5px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.1s;
+        }
+        
+        .action-btn:active {
+            background: #2575d7;
+            transform: scale(0.95);
+        }
+        
+        .action-btn.jump {
+            background: #00aa44;
+            border-color: #008833;
+        }
+        
+        .action-btn.jump:active {
+            background: #008833;
+        }
+        
+        .action-btn.place {
+            background: #ffaa00;
+            border-color: #ff8800;
+        }
+        
+        .action-btn.place:active {
+            background: #ff8800;
+        }
+        
+        .action-btn.delete {
+            background: #ff4444;
+            border-color: #cc0000;
+        }
+        
+        .action-btn.delete:active {
+            background: #cc0000;
+        }
+        
+        .mobile-status {
+            display: none;
+            background: #333;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            text-align: center;
+        }
+        
+        .mobile-status.show {
+            display: block;
+        }
+        
+        @media (max-width: 768px) {
+            .mobile-status {
+                display: block;
+            }
+            .mobile-d-pad {
+                grid-template-columns: repeat(3, 50px);
+            }
+            .d-pad-btn {
+                width: 50px;
+                height: 50px;
+                font-size: 20px;
+            }
         }
     </style>
 </head>
@@ -197,6 +379,44 @@
                 <h3>Online Players</h3>
                 <div id="playersList"></div>
             </div>
+            
+            <!-- Мобильное управление -->
+            <div class="mobile-controls" id="mobileControls">
+                <div class="mobile-status">
+                    <p id="mobileStatus">Connected</p>
+                    <p id="mobilePlayerCount">Players: 0</p>
+                </div>
+                
+                <div style="display: flex; gap: 5px; overflow-x: auto; padding: 5px 0;">
+                    <button class="color-btn active" style="width: 40px; height: 40px; background: #FF0000;" onclick="selectMobileColor('#FF0000', this)"></button>
+                    <button class="color-btn" style="width: 40px; height: 40px; background: #FF7F00;" onclick="selectMobileColor('#FF7F00', this)"></button>
+                    <button class="color-btn" style="width: 40px; height: 40px; background: #FFFF00;" onclick="selectMobileColor('#FFFF00', this)"></button>
+                    <button class="color-btn" style="width: 40px; height: 40px; background: #00FF00;" onclick="selectMobileColor('#00FF00', this)"></button>
+                    <button class="color-btn" style="width: 40px; height: 40px; background: #0000FF;" onclick="selectMobileColor('#0000FF', this)"></button>
+                    <button class="color-btn" style="width: 40px; height: 40px; background: #4B0082;" onclick="selectMobileColor('#4B0082', this)"></button>
+                    <button class="color-btn" style="width: 40px; height: 40px; background: #9400D3;" onclick="selectMobileColor('#9400D3', this)"></button>
+                </div>
+                
+                <div class="mobile-d-pad">
+                    <div></div>
+                    <button class="d-pad-btn" id="upBtn" ontouchstart="handleMobileMove('up', true)" ontouchend="handleMobileMove('up', false)">⬆️</button>
+                    <div></div>
+                    
+                    <button class="d-pad-btn" id="leftBtn" ontouchstart="handleMobileMove('left', true)" ontouchend="handleMobileMove('left', false)">⬅️</button>
+                    <div></div>
+                    <button class="d-pad-btn" id="rightBtn" ontouchstart="handleMobileMove('right', true)" ontouchend="handleMobileMove('right', false)">➡️</button>
+                    
+                    <div></div>
+                    <button class="d-pad-btn" id="downBtn" ontouchstart="handleMobileMove('down', true)" ontouchend="handleMobileMove('down', false)">⬇️</button>
+                    <div></div>
+                </div>
+                
+                <div class="mobile-action-buttons">
+                    <button class="action-btn jump" ontouchstart="handleMobileJump(true)" ontouchend="handleMobileJump(false)">JUMP</button>
+                    <button class="action-btn place" ontouchstart="handleMobilePlace()">PLACE</button>
+                    <button class="action-btn delete" ontouchstart="handleMobileDelete()">DELETE</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -214,6 +434,21 @@
         const GRID_WIDTH = 30;
         const GRID_HEIGHT = 20;
         const BLOCK_SIZE = 20;
+
+        // Определяем, мобильное ли устройство
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        
+        // Состояние мобильных кнопок
+        let mobileKeys = {
+            left: false,
+            right: false,
+            up: false,
+            down: false
+        };
+
+        if (isMobile) {
+            console.log('📱 Mobile version activated - Touch controls enabled');
+        }
 
         const playerColors = [
             '#ff69b4', '#FFD700', '#00CED1', '#00FF00',
@@ -316,8 +551,15 @@
 
             canvas = document.getElementById('canvas');
             ctx = canvas.getContext('2d');
-            canvas.width = 600;
-            canvas.height = 400;
+            
+            // Адаптивные размеры canvas для мобильных
+            if (isMobile || window.innerWidth <= 768) {
+                canvas.width = Math.min(window.innerWidth - 40, 600);
+                canvas.height = Math.min(window.innerHeight * 0.4, 300);
+            } else {
+                canvas.width = 600;
+                canvas.height = 400;
+            }
 
             updateStatus('Connected', true);
 
@@ -338,17 +580,26 @@
             window.addEventListener('keydown', (e) => keys[e.key] = true);
             window.addEventListener('keyup', (e) => keys[e.key] = false);
 
-            canvas.addEventListener('mousemove', (e) => {
-                const rect = canvas.getBoundingClientRect();
-                lastMousePos.x = e.clientX - rect.left;
-                lastMousePos.y = e.clientY - rect.top;
-            });
+            if (!isMobile) {
+                canvas.addEventListener('mousemove', (e) => {
+                    const rect = canvas.getBoundingClientRect();
+                    lastMousePos.x = e.clientX - rect.left;
+                    lastMousePos.y = e.clientY - rect.top;
+                });
 
-            canvas.addEventListener('click', placeBlock);
-            canvas.addEventListener('contextmenu', (e) => {
-                e.preventDefault();
-                deleteBlock();
-            });
+                canvas.addEventListener('click', placeBlock);
+                canvas.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                    deleteBlock();
+                });
+            } else {
+                // Предотвращаем сенсорные действия по умолчанию
+                document.addEventListener('touchmove', (e) => {
+                    if (canvas && canvas.contains(e.target)) {
+                        e.preventDefault();
+                    }
+                }, { passive: false });
+            }
 
             gameLoop();
         }
@@ -356,6 +607,14 @@
         function selectColor(color, btn) {
             selectedColor = color;
             document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+
+        function selectMobileColor(color, btn) {
+            selectedColor = color;
+            // Удаляем активный класс со всех кнопок цвета в мобильном меню
+            const colorBtns = document.querySelectorAll('.mobile-controls .color-btn');
+            colorBtns.forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
         }
 
@@ -396,6 +655,15 @@
                     });
                     updatePlayersList();
                     break;
+                case 'playersUpdate':
+                    // Плавное обновление позиций всех игроков
+                    data.players.forEach(p => {
+                        if (p.id !== playerId && otherPlayers[p.id]) {
+                            otherPlayers[p.id].x = p.x;
+                            otherPlayers[p.id].y = p.y;
+                        }
+                    });
+                    break;
                 case 'blockPlaced':
                     grid[data.y][data.x] = data.color;
                     break;
@@ -414,7 +682,13 @@
                 item.innerHTML = `<div class="player-color" style="background: ${p.color}"></div><span>${p.name}</span>`;
                 listDiv.appendChild(item);
             });
-            document.getElementById('playerCount').textContent = `Players: ${Object.keys(otherPlayers).length + 1}`;
+            const playersCount = Object.keys(otherPlayers).length + 1;
+            document.getElementById('playerCount').textContent = `Players: ${playersCount}`;
+            // Обновляем мобильный счётчик
+            const mobileCount = document.getElementById('mobilePlayerCount');
+            if (mobileCount) {
+                mobileCount.textContent = `Players: ${playersCount}`;
+            }
         }
 
         function updateStatus(status, connected) {
@@ -426,6 +700,68 @@
             } else {
                 statusEl.classList.add('disconnected');
                 statusEl.classList.remove('connected');
+            }
+            // Обновляем мобильный статус
+            const mobileStatus = document.getElementById('mobileStatus');
+            if (mobileStatus) {
+                mobileStatus.textContent = status;
+                mobileStatus.style.color = connected ? '#00ff00' : '#ff0000';
+            }
+        }
+
+        // Функции для мобильного управления
+        function handleMobileMove(direction, isPressed) {
+            if (direction === 'left') mobileKeys.left = isPressed;
+            if (direction === 'right') mobileKeys.right = isPressed;
+            if (direction === 'up') mobileKeys.up = isPressed;
+            if (direction === 'down') mobileKeys.down = isPressed;
+
+            // Обновляем keys для основного движения
+            keys['ArrowLeft'] = mobileKeys.left;
+            keys['ArrowRight'] = mobileKeys.right;
+            keys['ArrowUp'] = mobileKeys.up;
+        }
+
+        function handleMobileJump(isPressed) {
+            keys[' '] = isPressed;
+        }
+
+        function handleMobilePlace() {
+            // На мобильном размещаем в центре экрана
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const pos = {
+                x: Math.floor(centerX / BLOCK_SIZE),
+                y: Math.floor(centerY / BLOCK_SIZE)
+            };
+            if (pos.x >= 0 && pos.x < GRID_WIDTH && pos.y >= 0 && pos.y < GRID_HEIGHT) {
+                if (ws) {
+                    ws.send(JSON.stringify({
+                        type: 'placeBlock',
+                        x: pos.x,
+                        y: pos.y,
+                        color: selectedColor
+                    }));
+                }
+            }
+        }
+
+        function handleMobileDelete() {
+            // На мобильном удаляем в центре экрана
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const pos = {
+                x: Math.floor(centerX / BLOCK_SIZE),
+                y: Math.floor(centerY / BLOCK_SIZE)
+            };
+            if (pos.x >= 0 && pos.x < GRID_WIDTH && pos.y >= 0 && pos.y < GRID_HEIGHT) {
+                if (ws) {
+                    ws.send(JSON.stringify({
+                        type: 'deleteBlock',
+                        x: pos.x,
+                        y: pos.y
+                    }));
+                }
             }
         }
 
@@ -517,9 +853,9 @@
                 isJumping = false;
             }
 
-            // Send player position to server
+            // Send player position to server каждые 150ms
             const now = Date.now();
-            if (ws && now - lastSendTime > 100) {
+            if (ws && now - lastSendTime > 150) {
                 ws.send(JSON.stringify({
                     type: 'movePlayer',
                     x: player.x,
@@ -595,6 +931,27 @@
             draw();
             requestAnimationFrame(gameLoop);
         }
+
+        // Ограничиваем до 60 FPS
+        const FPS = 60;
+        const frameTime = 1000 / FPS;
+        let lastFrameTime = 0;
+
+        function throttledGameLoop(currentTime) {
+            const deltaTime = currentTime - lastFrameTime;
+
+            if (deltaTime >= frameTime) {
+                if (!gamePaused) {
+                    update();
+                    draw();
+                }
+                lastFrameTime = currentTime - (deltaTime % frameTime);
+            }
+
+            requestAnimationFrame(throttledGameLoop);
+        }
+
+        requestAnimationFrame(throttledGameLoop);
     </script>
 </body>
 </html>
@@ -700,15 +1057,4 @@ window.addEventListener('keydown', (e) => {
         document.getElementById('pauseMenu').classList.remove('hidden');
     }
 });
-
-const originalGameLoop = gameLoop;
-gameLoop = function() {
-    if (!gamePaused) {
-        update();
-        draw();
-    }
-    requestAnimationFrame(gameLoop);
-};
-
-gameLoop();
 </script>

@@ -30,6 +30,8 @@ const wss = new WebSocket.Server({
 let players = {};
 let grid = Array(20).fill(null).map(() => Array(30).fill(null));
 let nextPlayerId = 1;
+let lastBroadcastTime = 0;
+const BROADCAST_INTERVAL = 50; // Отправляй обновления 20 раз в секунду (50ms)
 
 const playerColors = [
     '#ff69b4', '#FFD700', '#00CED1', '#00FF00',
@@ -177,10 +179,29 @@ function broadcast(message, excludePlayerId) {
     }
 }
 
+// Периодическое обновление позиций всех игроков (плавное движение)
+setInterval(() => {
+    const playersState = Object.values(players).map(p => ({
+        id: p.id,
+        x: p.x,
+        y: p.y,
+        name: p.name,
+        color: p.color
+    }));
+
+    // Отправляем обновление всем подключённым клиентам
+    broadcast({
+        type: 'playersUpdate',
+        players: playersState
+    }, null);
+}, BROADCAST_INTERVAL);
+
 server.listen(PORT, '0.0.0.0', () => {
     console.log('\n🎮 Block Builder Multiplayer Server');
     console.log('================================');
     console.log(`✅ Server running on port ${PORT}`);
+    console.log(`🎬 Client FPS: 60 (MAX)`);
+    console.log(`📡 Update broadcast: ${1000/BROADCAST_INTERVAL} times/sec (${BROADCAST_INTERVAL}ms)`);
     console.log(`\nDomain: ${process.env.RAILWAY_PUBLIC_DOMAIN || 'your-domain.railway.app'}`);
     console.log(`Connection string: ${process.env.RAILWAY_PUBLIC_DOMAIN || 'localhost'}${PORT === 80 || PORT === 443 ? '' : ':' + PORT}`);
     console.log(`\n🌐 WebSocket: wss://${process.env.RAILWAY_PUBLIC_DOMAIN || 'localhost' + ':' + PORT}`);
